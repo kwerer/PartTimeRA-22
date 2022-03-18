@@ -24,13 +24,13 @@ FypList = []
 
 # extract information from for you page
 for i in range(1,10):
-    
+    time.sleep(1)
     numLikes = driver.find_element(By.XPATH, f"//*[@id=\"app\"]/div[2]/div[2]/div[1]/div[{i}]/div/div[2]/div[2]/button[1]/strong").text
     numComments = driver.find_element(By.XPATH, f"//*[@id=\"app\"]/div[2]/div[2]/div[1]/div[{i}]/div/div[2]/div[2]/button[2]/strong").text
     numShares = driver.find_element(By.XPATH, f"//*[@id=\"app\"]/div[2]/div[2]/div[1]/div[{i}]/div/div[2]/div[2]/button[3]/strong").text
     userId = driver.find_element(By.XPATH, f"//*[@id=\"app\"]/div[2]/div[2]/div[1]/div[{i}]/div/div[1]/div[1]/a[2]/h3").text
 
-    FypObject.append({"post": i, "numLikes": numLikes, "numComments":numComments,"numShares":numShares, "userId": userId})
+    FypList.append({"post": i, "numLikes": numLikes, "numComments":numComments,"numShares":numShares, "userId": userId})
     print(numLikes, "numLikes")
     print(numComments, "numComments")
     print(numShares, "nunmShares")

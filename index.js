@@ -7,7 +7,8 @@ const { locateWith } = require("selenium-webdriver");
 const { time } = require("console");
 
 let fypList = [];
-let getPostData_comments = [];
+let totalPostsData = [];
+
 // function to get cookie data
 async function getCookies(filename) {
   const cookies = await csv().fromFile(filename);
@@ -22,7 +23,7 @@ async function getFpyData() {
 
   try {
     await driver.get("http://www.tiktok.com/");
-    for (let i = 1; i <= 8; i++) {
+    for (let i = 1; i <= 1; i++) {
       let numLikes = await driver
         .findElement(
           By.xpath(
@@ -101,7 +102,7 @@ async function getPostData() {
    */
 
   async function getIndivData() {
-    for (i = 1; i < 20; i++) {
+    for (i = 1; i < 5; i++) {
       console.log(i + "i");
       let postThumbnail = await driver.findElement(
         By.xpath(
@@ -120,11 +121,69 @@ async function getPostData() {
           )
         )
       );
+
       let numOfCommentsNumber = await numOfComments.getText();
       console.log(numOfCommentsNumber + "numof comments");
 
+      let postUserName = await driver.wait(
+        until.elementLocated(
+          By.xpath(
+            '//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[1]/a[2]/span[1]'
+          )
+        )
+      );
+      let postUserNameText = await postUserName.getText();
+
+      let postUserLikes = await driver.wait(
+        until.elementLocated(
+          By.xpath(
+            '//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[2]/div[2]/div[1]/div[1]/button[1]/strong'
+          )
+        )
+      );
+      let postUserLikesNumber = await postUserLikes.getText();
+
+      let postUserContent = await driver.wait(
+        until.elementLocated(
+          By.xpath(
+            '//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[2]/div[1]'
+          )
+        )
+      );
+      let postUserContentText = await postUserContent.getText();
+
+      let postUserDate = await driver.wait(
+        until.elementLocated(
+          By.xpath(
+            '//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[1]/a[2]/span[2]/span[2]'
+          )
+        )
+      );
+      let postUserDateText = await postUserDate.getText();
+
+      // To-Do re write function for date
+      // get m,h,d
+      // let timeFormat = postUserDateText.charAt(
+      //   postUserDateText.length - 5
+      // );
+
+      // let postURL = await driver.getCurrentUrl();
+
+      // function convertToDate() {}
+      const getIndivPostData = [];
+      const postUserDataObject = {
+        user: postUserNameText,
+        caption: postUserContentText,
+        likes: postUserLikesNumber,
+        numComments: numOfCommentsNumber,
+        // To-do change to calculate date
+        time: postUserDateText,
+      };
+      getIndivPostData.push(postUserDataObject);
+
       if (numOfCommentsNumber != 0) {
-        for (j = 1; j < Math.floor(numOfCommentsNumber * 0.8); j++) {
+        //Math.floor(numOfCommentsNumber * 0.8)
+        for (j = 1; j < 4; j++) {
           console.log(j, " j loop");
           if (
             (await driver.findElement(
@@ -144,6 +203,8 @@ async function getPostData() {
               )
             )
           );
+
+          let userCommentsNameText = await userCommentsName.getText();
           console.log("userCommentname ran");
 
           // scroll the browser until we get the name
@@ -162,6 +223,9 @@ async function getPostData() {
               )
             )
           );
+          let userCommentsContentText =
+            await userCommentsContent.getText();
+
           let userCommentsTime = await driver.wait(
             until.elementLocated(
               By.xpath(
@@ -171,6 +235,16 @@ async function getPostData() {
               )
             )
           );
+
+          let userCommentsTimeText = await userCommentsTime.getText();
+
+          // create obj to add details of comments
+          const commentObj = {
+            time: userCommentsTimeText,
+            user: userCommentsNameText,
+            content: userCommentsContentText,
+            replies: [],
+          };
           // check if comment has replies, get the comments if needed
           let userCommentReplyExist;
           try {
@@ -188,47 +262,51 @@ async function getPostData() {
           } catch {
             userCommentReplyExist = null;
           }
-          let userCommentReplies;
+          let userCommentRepliesName;
           if (userCommentReplyExist != null) {
             for (k = 1; k < 15; k++) {
               try {
-                userCommentReplies = await driver.findElement(
+                userCommentRepliesName = await driver.findElement(
                   By.xpath(
                     `//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[3]/div[1]/div[2]/div[${k}]/div[1]/a/span`
                   )
                 );
               } catch {
-                userCommentReplies = null;
+                userCommentRepliesName = null;
                 // break for loop
                 k = 15;
               }
-              if (userCommentReplies != null) {
+
+              if (userCommentRepliesName != null) {
                 // add j to stop it from running when max comments is reached
                 j++;
-                console.log(
-                  await userCommentReplies.getText(),
-                  "usercomment replies"
-                );
-
+                // get username of user who commented
+                let userCommentRepliesNameText =
+                  await userCommentRepliesName.getText();
+                // find reply content
                 let userCommentRepliesContent = await driver.findElement(
                   By.xpath(
                     `//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[3]/div[1]/div[2]/div[${k}]/div[1]/p[1]/span`
                   )
                 );
-                console.log(
-                  await userCommentRepliesContent.getText(),
-                  "user comment replies content"
-                );
+
+                let userCommentRepliesContentText =
+                  await userCommentRepliesContent.getText();
 
                 let userCommentRepliesTime = await driver.findElement(
                   By.xpath(
                     `//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[3]/div[1]/div[2]/div[${k}]/div[1]/p[2]/span[1]`
                   )
                 );
-                console.log(
-                  await userCommentRepliesTime.getText(),
-                  "user comment replies time"
-                );
+
+                let userCommentRepliesTimeText =
+                  await userCommentRepliesTime.getText();
+
+                commentObj.replies.push({
+                  username: userCommentRepliesNameText,
+                  content: userCommentRepliesContentText,
+                  time: userCommentRepliesTimeText,
+                });
               } else {
                 //do nothing
               }
@@ -237,14 +315,17 @@ async function getPostData() {
             console.log("No replies to comment");
           }
 
-          console.log(await userCommentsName.getText(), "name");
-          console.log(await userCommentsContent.getText(), "content");
-          console.log(await userCommentsTime.getText(), "time");
+          // console.log(await userCommentsName.getText(), "name");
+          // console.log(await userCommentsContent.getText(), "content");
+          // console.log(await userCommentsTime.getText(), "time");
+
+          getIndivPostData.push(commentObj);
         }
       } else {
         console.log("element not found");
       }
 
+      totalPostsData.push(getIndivPostData);
       // click on back button to continue with other post
       let postBackButton = await driver.wait(
         until.elementLocated(
@@ -256,6 +337,7 @@ async function getPostData() {
 
       await postBackButton.click();
     }
+    console.log(totalPostsData, "oooo");
   }
   getIndivData();
 

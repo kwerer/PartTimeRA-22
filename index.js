@@ -3,6 +3,8 @@ const fs = require("fs");
 const csv = require("csvtojson");
 const { Parser } = require("json2csv");
 const chrome = require("selenium-webdriver/chrome");
+const { locateWith } = require("selenium-webdriver");
+const { time } = require("console");
 
 let fypList = [];
 let getPostData_comments = [];
@@ -64,10 +66,7 @@ async function getFpyData() {
 
 // unable to locate element of tiktok video
 async function getPostData() {
-  let driver = await new Builder()
-    .forBrowser("chrome")
-    // .setChromeOptions(new chrome.Options().windowSize(1280, 800))
-    .build();
+  let driver = await new Builder().forBrowser("chrome").build();
   // go to search option
   await driver.get(
     "https://www.tiktok.com/search?q=ukraine&t=1647319574104"
@@ -113,74 +112,137 @@ async function getPostData() {
       );
       postThumbnail.click();
       await driver.manage().setTimeouts({ implicit: 7000 });
-      for (j = 1; j < 16; j++) {
-        // check if there are comments available
-        let exists = await driver.findElements(
+      // check if there are comments available
+      let numOfComments = await driver.wait(
+        until.elementLocated(
           By.xpath(
-            `//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[3]/div[${j}]/div[1]/div[1]/a/span`
+            '//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[2]/div[2]/div[1]/div[1]/button[2]/strong'
           )
-        );
+        )
+      );
+      let numOfCommentsNumber = await numOfComments.getText();
+      console.log(numOfCommentsNumber + "numof comments");
 
-        console.log(exists[0] != null, "exist");
-        if (exists[0] != null) {
-          console.log(j + "j");
-          let userCommentsName = driver.wait(
+      if (numOfCommentsNumber != 0) {
+        for (j = 1; j < Math.floor(numOfCommentsNumber * 0.8); j++) {
+          console.log(j, " j loop");
+          if (
+            (await driver.findElement(
+              By.xpath(
+                `//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[3]/div[${j}]/div[1]/div[1]/a/span`
+              )
+            )) == null
+          ) {
+            break;
+          }
+          let userCommentsName = await driver.wait(
             until.elementLocated(
-              By.linkText(
+              By.xpath(
                 `//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[3]/div[${j}]/div[1]/div[1]/a/span`,
-                //*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[3]/div[2]/div[1]/div[1]/p[1]/span
 
-                3000
+                1000
               )
             )
           );
+          console.log("userCommentname ran");
 
-          let userCommentsContent = driver.wait(
+          // scroll the browser until we get the name
+          // ensures that browser driver is able to get the element located
+          await driver.executeScript(
+            "arguments[0].scrollIntoView(true);",
+            userCommentsName
+          );
+
+          let userCommentsContent = await driver.wait(
             until.elementLocated(
               By.xpath(
                 `//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[3]/div[${j}]/div[1]/div[1]/p[1]/span`,
 
-                3000
+                1000
               )
             )
           );
-          // check if comment has replies, get the comments if needed
-          // let userCommentReplyExist = await driver.findElements(
-          //   By.xpath(
-          //     `//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[3]/div[${j}]/div[2]/div/p`,
-
-          //     1000
-          //   )
-          // );
-          // console.log(userCommentReplyExist, "usecommmm");
-          // await userCommentReplyExist.click();
-          // if (userCommentReplyExist[0] != null) {
-          //   for (
-          //     commentReplyNum = 1;
-          //     commentReplyNum < 15;
-          //     commentReplyNum++
-          //   ) {
-          //     console.log("clicked");
-          //   }
-          // } else {
-          //   console.log("No replies to comment");
-          // }
-
-          let userCommentsTime = driver.wait(
+          let userCommentsTime = await driver.wait(
             until.elementLocated(
               By.xpath(
                 `//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[3]/div[${j}]/div[1]/div[1]/p[2]/span[1]`,
 
-                3000
+                1000
               )
             )
           );
+          // check if comment has replies, get the comments if needed
+          let userCommentReplyExist;
+          try {
+            userCommentReplyExist = await driver.findElement(
+              By.xpath(
+                `//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[3]/div[${j}]/div[2]/div[1]/p`
+              )
+            );
+            console.log(
+              await userCommentReplyExist.getText(),
+              "usecommmm"
+            );
+            // click on the user replies to comment
+            await userCommentReplyExist.click();
+          } catch {
+            userCommentReplyExist = null;
+          }
+          let userCommentReplies;
+          if (userCommentReplyExist != null) {
+            for (k = 1; k < 15; k++) {
+              try {
+                userCommentReplies = await driver.findElement(
+                  By.xpath(
+                    `//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[3]/div[1]/div[2]/div[${k}]/div[1]/a/span`
+                  )
+                );
+              } catch {
+                userCommentReplies = null;
+                // break for loop
+                k = 15;
+              }
+              if (userCommentReplies != null) {
+                // add j to stop it from running when max comments is reached
+                j++;
+                console.log(
+                  await userCommentReplies.getText(),
+                  "usercomment replies"
+                );
+
+                let userCommentRepliesContent = await driver.findElement(
+                  By.xpath(
+                    `//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[3]/div[1]/div[2]/div[${k}]/div[1]/p[1]/span`
+                  )
+                );
+                console.log(
+                  await userCommentRepliesContent.getText(),
+                  "user comment replies content"
+                );
+
+                let userCommentRepliesTime = await driver.findElement(
+                  By.xpath(
+                    `//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[3]/div[1]/div[2]/div[${k}]/div[1]/p[2]/span[1]`
+                  )
+                );
+                console.log(
+                  await userCommentRepliesTime.getText(),
+                  "user comment replies time"
+                );
+              } else {
+                //do nothing
+              }
+            }
+          } else {
+            console.log("No replies to comment");
+          }
+
           console.log(await userCommentsName.getText(), "name");
           console.log(await userCommentsContent.getText(), "content");
           console.log(await userCommentsTime.getText(), "time");
-        } else {
-          console.log("element not found");
         }
+      } else {
+        console.log("element not found");
       }
 
       // click on back button to continue with other post
@@ -191,9 +253,8 @@ async function getPostData() {
           )
         )
       );
-      console.log("click located");
+
       await postBackButton.click();
-      console.log("clicked");
     }
   }
   getIndivData();
@@ -217,7 +278,7 @@ async function getPostData() {
   //       By.xpath(
   //         `//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[3]/div[${i}]/div[1]/div[1]/a/span`,
 
-  //         3000
+  //         1000
   //       )
   //     )
   //   );
@@ -227,7 +288,7 @@ async function getPostData() {
   //       By.xpath(
   //         `//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[3]/div[${i}]/div[1]/div[1]/a/span`,
 
-  //         3000
+  //         1000
   //       )
   //     )
   //   );
@@ -237,7 +298,7 @@ async function getPostData() {
   //       By.xpath(
   //         `//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[2]/div[3]/div[${i}]/div[1]/div[1]/p[2]/span[1]`,
 
-  //         3000
+  //         1000
   //       )
   //     )
   //   );

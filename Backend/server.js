@@ -1,17 +1,24 @@
 import express from "express";
 import cors from "cors";
 import getPostData from "./index.js";
-import TiktokData from "./config.js";
+import { TiktokDataComments, TiktokDataPost } from "./config.js";
+import testing from "./test.js";
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-app.post("/sendTiktokData", async (req, res) => {
-  console.log(getPostData(), " total post adata");
+app.post("/sendTiktokDataPost", async (req, res) => {
   const data = req.body;
-  await User.add({ data });
-  res.send({ msg: "Data Added" });
+  console.log(data, "data from servef file");
+  await TiktokDataPost.doc(data.postUserDataObject.uniqueId).set(data);
+  res.send({ msg: "Post Added" });
+});
+app.post("/sendTiktokDataComments", async (req, res) => {
+  console.log(req.body, " req in server file");
+  const data = req.body;
+  await TiktokDataComments.add(data);
+  res.send({ msg: "Comments Added" });
 });
 
 app.listen(4000, () => {

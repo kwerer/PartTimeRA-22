@@ -1,6 +1,7 @@
 import { Builder, By, until } from "selenium-webdriver";
 import csv from "csvtojson";
-import axios from "axios";
+import axiosInstance from "./axiosInstance.js";
+import { v4 as uuidv4 } from "uuid";
 
 let fypList = [];
 let totalPostsData = [];
@@ -102,20 +103,24 @@ async function getPostData() {
     for (let i = 1; i < 5; i++) {
       console.log(i + "i");
 
+      // declare new identifier for each new post
+      let uniqueId = uuidv4();
+
       let postThumbnail = await driver.wait(
         until.elementLocated(
           By.xpath(
             `//*[@id="app"]/div[2]/div[2]/div[2]/div[1]/div/div[${
-              i + 2
+              i + 1
             }]/div[1]/div/div/a`
-          )
+          ),
+          5000
         )
       );
       await driver.executeScript(
         "arguments[0].scrollIntoView(true);",
         postThumbnail
       );
-      postThumbnail.click();
+      await postThumbnail.click();
       await driver.manage().setTimeouts({ implicit: 7000 });
       // check if there are comments available
       let numOfComments = await driver.wait(
@@ -176,6 +181,7 @@ async function getPostData() {
       // function convertToDate() {}
       const getIndivPostData = [];
       const postUserDataObject = {
+        uniqueId: uniqueId,
         user: postUserNameText,
         caption: postUserContentText,
         likes: postUserLikesNumber,
@@ -241,9 +247,12 @@ async function getPostData() {
           );
 
           let userCommentsTimeText = await userCommentsTime.getText();
+          console.log(userCommentsTimeText, "tiometext");
+          console.log(userCommentsNameText, "nametext");
 
           // create obj to add details of comments
           const commentObj = {
+            uniqueId: uniqueId,
             time: userCommentsTimeText,
             user: userCommentsNameText,
             content: userCommentsContentText,
@@ -259,7 +268,7 @@ async function getPostData() {
               )
             );
             console.log(
-              await await userCommentReplyExist.getText(),
+              await userCommentReplyExist.getText(),
               "usecommmm"
             );
             // click on the user replies to comment
@@ -320,11 +329,16 @@ async function getPostData() {
             console.log("No replies to comment");
           }
 
-          // console.log(await userCommentsName.getText(), "name");
-          // console.log(await userCommentsContent.getText(), "content");
-          // console.log(await userCommentsTime.getText(), "time");
-
           getIndivPostData.push(commentObj);
+          console.log(commentObj, "comment obj");
+          axiosInstance
+            .post("/sendTiktokDataComments", { commentObj })
+            .then(function (res) {
+              console.log(res);
+            })
+            .catch(function (err) {
+              console.log(err);
+            });
         }
       } else {
         console.log("element not found");
@@ -336,18 +350,20 @@ async function getPostData() {
         until.elementLocated(
           By.xpath(
             '//*[@id="app"]/div[2]/div[2]/div[2]/div[3]/div[1]/button[1]'
-          )
+          ),
+          5000
         )
       );
-
+      axiosInstance
+        .post("/sendTiktokDataPost", { postUserDataObject })
+        .then(function (res) {
+          console.log(res);
+        })
+        .catch(function (err) {
+          console.log(err);
+        });
       await postBackButton.click();
-    }
-    console.log(totalPostsData, "oooo");
-    axios.post("/sendTiktokData", { totalPostsData }).then(function (res) {
-      console.log(res).catch(function (err) {
-        console.log(err);
-      });
-    });
+    } // end of i loop
   }
   getIndivData();
 

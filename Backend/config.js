@@ -8,5 +8,12 @@ admin.initializeApp({
 
 // admin.initializeApp(firebaseConfig);
 const db = admin.firestore();
-const TiktokData = db.collection("Tiktok Data");
-export default TiktokData;
+const TiktokDataComments = db
+  .collection("Tiktok Data")
+  .doc("PostComments")
+  .collection("IndividualPostComments");
+const TiktokDataPost = db
+  .collection("Tiktok Data")
+  .doc("PostData")
+  .collection("IndividualPostData");
+export { TiktokDataComments, TiktokDataPost, db };
